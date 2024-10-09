@@ -9,7 +9,8 @@ public class study06EditorTarget : TargetRules
 	{
 		Type = TargetType.Editor;
 		DefaultBuildSettings = BuildSettingsVersion.V5;
-
+		IncludeOrderVersion = EngineIncludeOrderVersion.Oldest;
 		ExtraModuleNames.AddRange(new string[] { "study06" });
 	}
 }
+
