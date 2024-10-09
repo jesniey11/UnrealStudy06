@@ -8,8 +8,8 @@ public class study06Target : TargetRules
 	public study06Target(TargetInfo Target) : base(Target)
 	{
 		Type = TargetType.Game;
-		DefaultBuildSettings = BuildSettingsVersion.V4;
-		IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_3;
-		ExtraModuleNames.Add("study06");
+		DefaultBuildSettings = BuildSettingsVersion.V5;
+
+		ExtraModuleNames.AddRange(new string[] { "study06" });
 	}
 }
