@@ -36,6 +36,14 @@ void AGun::Tick(float DeltaTime)
 
 void AGun::PullTrigger()
 {
+	if (Ammo <= 0) 
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No Ammo"));
+		return; 
+	}
+
+	Ammo--;
+
 	//Shoot 이펙트 및 사운드
 	UGameplayStatics::SpawnEmitterAttached(MuzzleFlash, Mesh, TEXT("MuzzleFlashSocket"));
 	UGameplayStatics::SpawnSoundAttached(MuzzleSound, Mesh, TEXT("MuzzleFlashSocket"));

@@ -52,6 +52,9 @@ private:
 	UPROPERTY(EditAnywhere)
 	float Damage = 10.f;
 
+	UPROPERTY(VisibleAnywhere)
+	int32 Ammo = 10;
+
 	/* Functions */
 	bool GunTrace(FHitResult& Hit, FVector& ShotDirection);
 
