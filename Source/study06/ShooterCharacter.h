@@ -49,16 +49,34 @@ private:
 	UPROPERTY(VisibleAnywhere)
 	float Health;
 
+	UPROPERTY(EditAnywhere)
+	TArray<AGun*> Weapon;
+
+	UPROPERTY(EditDefaultsOnly)
+	TArray<TSubclassOf<AGun>> WeaponList;
+
+	UPROPERTY(EditAnywhere)
+	int32 ActiveWeaponIdx = 0;
+
+	/*
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<AGun> GunClass;
 
 	UPROPERTY()
 	AGun* Gun;
+	*/
 
 	/* Functions */
 	void MoveForward(float AxisValue);
 	void MoveRight(float AxisValue);
 	void LookUpRate(float AxisValue);
 	void LookRightRate(float AxisValue);
-	//void Shoot();
+
+	void ChangeWeaponIdx1();
+	void ChangeWeaponIdx2();
+	void ChangeWeaponIdx3();
+	void ChangeWeaponIdx4();
+
+	void ChangeWeapon(int32 Index);
+
 };

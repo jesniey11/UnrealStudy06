@@ -22,15 +22,32 @@ void AShooterCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	//Animation 기본 총 invisible
+	//Animation 기본 총 숨기기
 	GetMesh()->HideBoneByName(TEXT("weapon_r"), EPhysBodyOp::PBO_None);
 
+	/*
 	//Gun 액터 생성
 	Gun = GetWorld()->SpawnActor<AGun>(GunClass);
 
 	//Character에 총 Attach
 	Gun->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepRelativeTransform, TEXT("WeaponSocket"));
 	Gun->SetOwner(this);
+	*/
+
+	//모든 Weapon 스폰
+	for (TSubclassOf<AGun> Weapons : WeaponList)
+	{
+		//액터 생성
+		Weapon.Add(GetWorld()->SpawnActor<AGun>(Weapons));
+
+		//Character에 Attach 후 일단 숨기기
+		Weapon.Last()->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepRelativeTransform, TEXT("WeaponSocket"));
+		Weapon.Last()->SetActorHiddenInGame(true);
+	}
+
+	//초기 Weapon 설정
+	Weapon[ActiveWeaponIdx]->SetActorHiddenInGame(false);
+	Weapon[ActiveWeaponIdx]->SetOwner(this);
 
 	//캐릭터 Health 세팅
 	Health = MaxHealth;
@@ -57,8 +74,14 @@ void AShooterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 	PlayerInputComponent->BindAxis(TEXT("LookRightRate"), this, &AShooterCharacter::LookRightRate);
 
 	PlayerInputComponent->BindAction(TEXT("Jump"), EInputEvent::IE_Pressed, this, &ACharacter::Jump);
-
 	PlayerInputComponent->BindAction(TEXT("Shoot"), EInputEvent::IE_Pressed, this, &AShooterCharacter::Shoot);
+
+	//Enhanced Input으로 바꾸면 개선됨...
+	PlayerInputComponent->BindAction(TEXT("WeaponChangeNumber1"), EInputEvent::IE_Pressed, this, &AShooterCharacter::ChangeWeaponIdx1);
+	PlayerInputComponent->BindAction(TEXT("WeaponChangeNumber2"), EInputEvent::IE_Pressed, this, &AShooterCharacter::ChangeWeaponIdx2);
+	PlayerInputComponent->BindAction(TEXT("WeaponChangeNumber3"), EInputEvent::IE_Pressed, this, &AShooterCharacter::ChangeWeaponIdx3);
+	PlayerInputComponent->BindAction(TEXT("WeaponChangeNumber4"), EInputEvent::IE_Pressed, this, &AShooterCharacter::ChangeWeaponIdx4);
+	
 }
 
 float AShooterCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
@@ -116,7 +139,50 @@ void AShooterCharacter::LookRightRate(float AxisValue)
 	AddControllerYawInput(AxisValue * RotationRate * GetWorld()->GetDeltaSeconds());
 }
 
+void AShooterCharacter::ChangeWeaponIdx1()
+{
+	ChangeWeapon(0);
+}
+
+void AShooterCharacter::ChangeWeaponIdx2()
+{
+	ChangeWeapon(1);
+}
+
+void AShooterCharacter::ChangeWeaponIdx3()
+{
+	ChangeWeapon(2);
+}
+
+void AShooterCharacter::ChangeWeaponIdx4()
+{
+	ChangeWeapon(3);
+}
+
+void AShooterCharacter::ChangeWeapon(int32 Index)
+{
+	//null 체크 필요
+	if (!Weapon.IsValidIndex(Index)) 
+	{
+		UE_LOG(LogTemp, Warning, TEXT("KEY%d: NO Weapon"), Index); 
+		return;
+	}
+
+	//현재 착용중인 Weapon 비활성화
+	UE_LOG(LogTemp, Warning, TEXT("비활 Active Idx: %d"), ActiveWeaponIdx);
+	Weapon[ActiveWeaponIdx]->SetActorHiddenInGame(true);
+	Weapon[ActiveWeaponIdx]->SetOwner(nullptr);
+	
+	ActiveWeaponIdx = Index;
+
+	//인덱스 중인 Weapon만 활성화
+	UE_LOG(LogTemp, Warning, TEXT("활성화 Active Idx: %d"), ActiveWeaponIdx);
+	Weapon[ActiveWeaponIdx]->SetActorHiddenInGame(false);
+	Weapon[ActiveWeaponIdx]->SetOwner(this);
+}
+
 void AShooterCharacter::Shoot()
 {
-	Gun->PullTrigger();
+	//Gun->PullTrigger();
+	Weapon[ActiveWeaponIdx]->PullTrigger();
 }
