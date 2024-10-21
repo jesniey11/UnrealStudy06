@@ -6,6 +6,11 @@
 #include "GameFramework/Character.h"
 #include "ShooterCharacter.generated.h"
 
+//Input Class
+class UInputMappingContext;
+class UInputAction;
+struct FInputActionValue;
+
 class AGun;
 
 UCLASS()
@@ -21,12 +26,12 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	// Called to bind functionality to input
+	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
-
-	// Called to bind functionality to input
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 
@@ -39,7 +44,6 @@ public:
 	void Shoot();
 
 private:
-	/* Variables */
 	UPROPERTY(EditAnywhere)
 	float RotationRate = 10.f;
 
@@ -66,17 +70,47 @@ private:
 	AGun* Gun;
 	*/
 
-	/* Functions */
-	void MoveForward(float AxisValue);
-	void MoveRight(float AxisValue);
-	void LookUpRate(float AxisValue);
-	void LookRightRate(float AxisValue);
+	//Input
+	UPROPERTY(EditDefaultsOnly)
+	UInputAction* MoveAction;
 
+	UPROPERTY(EditDefaultsOnly)
+	UInputAction* LookAction;
+
+	UPROPERTY(EditDefaultsOnly)
+	UInputAction* JumpAction;
+
+	UPROPERTY(EditDefaultsOnly)
+	UInputAction* ShootAction;
+
+	UPROPERTY(EditDefaultsOnly)
+	UInputAction* ReloadAction;
+
+	UPROPERTY(EditDefaultsOnly)
+	UInputAction* SwitchWeaponAction1;
+
+	UPROPERTY(EditDefaultsOnly)
+	UInputAction* SwitchWeaponAction2;
+
+	UPROPERTY(EditDefaultsOnly)
+	UInputAction* SwitchWeaponAction3;
+
+	UPROPERTY(EditDefaultsOnly)
+	UInputAction* SwitchWeaponAction4;
+
+	UPROPERTY(EditDefaultsOnly)
+	UInputMappingContext* InputMappingContext;
+
+	void Move(const FInputActionValue& Value);
+	void Look(const FInputActionValue& Value);
+	
+	void Reload();
+
+	void ChangeWeapon(int32 Index);
 	void ChangeWeaponIdx1();
 	void ChangeWeaponIdx2();
 	void ChangeWeaponIdx3();
 	void ChangeWeaponIdx4();
 
-	void ChangeWeapon(int32 Index);
-
+	
 };

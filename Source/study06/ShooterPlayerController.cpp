@@ -23,7 +23,7 @@ void AShooterPlayerController::GameHasEnded(AActor* EndGameFocus, bool bIsWinner
 	Super::GameHasEnded(EndGameFocus, bIsWinner);
 
 	//HUD 끄기
-	HUD->RemoveFromViewport();
+	HUD->RemoveFromParent();
 
 	if (bIsWinner) 
 	{

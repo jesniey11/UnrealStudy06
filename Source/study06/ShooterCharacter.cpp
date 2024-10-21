@@ -9,6 +9,10 @@
 #include "KillEmAllGameMode.h"
 #include "SimpleShooterGameModeBase.h"
 
+#include "EnhancedInputComponent.h"
+#include "EnhancedInputSubsystems.h"
+
+
 // Sets default values
 AShooterCharacter::AShooterCharacter()
 {
@@ -24,15 +28,6 @@ void AShooterCharacter::BeginPlay()
 	
 	//Animation 기본 총 숨기기
 	GetMesh()->HideBoneByName(TEXT("weapon_r"), EPhysBodyOp::PBO_None);
-
-	/*
-	//Gun 액터 생성
-	Gun = GetWorld()->SpawnActor<AGun>(GunClass);
-
-	//Character에 총 Attach
-	Gun->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepRelativeTransform, TEXT("WeaponSocket"));
-	Gun->SetOwner(this);
-	*/
 
 	//모든 Weapon 스폰
 	for (TSubclassOf<AGun> Weapons : WeaponList)
@@ -53,6 +48,40 @@ void AShooterCharacter::BeginPlay()
 	Health = MaxHealth;
 }
 
+// Enhanced Input
+void AShooterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+{
+	Super::SetupPlayerInputComponent(PlayerInputComponent);
+
+	//InputMappingContext 매핑
+	APlayerController* PlayerController = Cast<APlayerController>(GetController());
+	if (PlayerController)
+	{
+		UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer());
+		if (Subsystem)
+		{
+			Subsystem->AddMappingContext(InputMappingContext, 0);
+		}
+	}
+
+	//InputAction 바인딩
+	UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent);
+	if (EnhancedInputComponent)
+	{
+		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AShooterCharacter::Move);
+		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AShooterCharacter::Look);
+		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ACharacter::Jump);
+
+		EnhancedInputComponent->BindAction(ShootAction, ETriggerEvent::Triggered, this, &AShooterCharacter::Shoot);
+		EnhancedInputComponent->BindAction(ReloadAction, ETriggerEvent::Triggered, this, &AShooterCharacter::Reload);
+
+		EnhancedInputComponent->BindAction(SwitchWeaponAction1, ETriggerEvent::Triggered, this, &AShooterCharacter::ChangeWeaponIdx1);
+		EnhancedInputComponent->BindAction(SwitchWeaponAction2, ETriggerEvent::Triggered, this, &AShooterCharacter::ChangeWeaponIdx2);
+		EnhancedInputComponent->BindAction(SwitchWeaponAction3, ETriggerEvent::Triggered, this, &AShooterCharacter::ChangeWeaponIdx3);
+		EnhancedInputComponent->BindAction(SwitchWeaponAction4, ETriggerEvent::Triggered, this, &AShooterCharacter::ChangeWeaponIdx4);
+	}
+}
+
 // Called every frame
 void AShooterCharacter::Tick(float DeltaTime)
 {
@@ -60,28 +89,87 @@ void AShooterCharacter::Tick(float DeltaTime)
 
 }
 
-// Called to bind functionality to input
-void AShooterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+void AShooterCharacter::Move(const FInputActionValue& Value)
 {
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
+	if (Controller)
+	{
+		//입력값
+		FVector2D MoveVector = Value.Get<FVector2D>();
 
-	PlayerInputComponent->BindAxis(TEXT("MoveForward"), this, &AShooterCharacter::MoveForward);
-	PlayerInputComponent->BindAxis(TEXT("MoveRight"), this, &AShooterCharacter::MoveRight);
-	PlayerInputComponent->BindAxis(TEXT("LookUp"), this, &APawn::AddControllerPitchInput);
-	PlayerInputComponent->BindAxis(TEXT("LookRight"), this, &APawn::AddControllerYawInput);
+		//캐릭터가 보고 있는 방향
+		const FRotator PlayerRotation(0, Controller->GetControlRotation().Yaw, 0);
 
-	PlayerInputComponent->BindAxis(TEXT("LookUpRate"), this, &AShooterCharacter::LookUpRate);
-	PlayerInputComponent->BindAxis(TEXT("LookRightRate"), this, &AShooterCharacter::LookRightRate);
+		//이동할 방향
+		const FVector ForwardDirection = FRotationMatrix(PlayerRotation).GetUnitAxis(EAxis::X);
+		const FVector RightDirection = FRotationMatrix(PlayerRotation).GetUnitAxis(EAxis::Y);
 
-	PlayerInputComponent->BindAction(TEXT("Jump"), EInputEvent::IE_Pressed, this, &ACharacter::Jump);
-	PlayerInputComponent->BindAction(TEXT("Shoot"), EInputEvent::IE_Pressed, this, &AShooterCharacter::Shoot);
+		//적용
+		AddMovementInput(ForwardDirection, MoveVector.Y);
+		AddMovementInput(RightDirection, MoveVector.X);
+	}
+}
 
-	//Enhanced Input으로 바꾸면 개선됨...
-	PlayerInputComponent->BindAction(TEXT("WeaponChangeNumber1"), EInputEvent::IE_Pressed, this, &AShooterCharacter::ChangeWeaponIdx1);
-	PlayerInputComponent->BindAction(TEXT("WeaponChangeNumber2"), EInputEvent::IE_Pressed, this, &AShooterCharacter::ChangeWeaponIdx2);
-	PlayerInputComponent->BindAction(TEXT("WeaponChangeNumber3"), EInputEvent::IE_Pressed, this, &AShooterCharacter::ChangeWeaponIdx3);
-	PlayerInputComponent->BindAction(TEXT("WeaponChangeNumber4"), EInputEvent::IE_Pressed, this, &AShooterCharacter::ChangeWeaponIdx4);
-	
+void AShooterCharacter::Look(const FInputActionValue& Value)
+{
+	if (Controller)
+	{
+		//입력값(보는 방향)
+		FVector2D LookVector = Value.Get<FVector2D>();
+
+		//적용
+		AddControllerYawInput(LookVector.X);
+		AddControllerPitchInput(LookVector.Y);
+	}
+}
+
+void AShooterCharacter::Reload()
+{
+	Weapon[ActiveWeaponIdx]->ReloadAmmo();
+}
+
+void AShooterCharacter::Shoot()
+{
+	Weapon[ActiveWeaponIdx]->PullTrigger();
+}
+
+void AShooterCharacter::ChangeWeapon(int32 Index)
+{
+	//null 체크 필요
+	if (!Weapon.IsValidIndex(Index))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("KEY%d: NO Weapon"), Index);
+		return;
+	}
+
+	//현재 착용중인 Weapon 비활성화
+	Weapon[ActiveWeaponIdx]->SetActorHiddenInGame(true);
+	Weapon[ActiveWeaponIdx]->SetOwner(nullptr);
+
+	ActiveWeaponIdx = Index;
+
+	//인덱스 중인 Weapon만 활성화
+	Weapon[ActiveWeaponIdx]->SetActorHiddenInGame(false);
+	Weapon[ActiveWeaponIdx]->SetOwner(this);
+}
+
+void AShooterCharacter::ChangeWeaponIdx1()
+{
+	ChangeWeapon(0);
+}
+
+void AShooterCharacter::ChangeWeaponIdx2()
+{
+	ChangeWeapon(1);
+}
+
+void AShooterCharacter::ChangeWeaponIdx3()
+{
+	ChangeWeapon(2);
+}
+
+void AShooterCharacter::ChangeWeaponIdx4()
+{
+	ChangeWeapon(3);
 }
 
 float AShooterCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
@@ -117,72 +205,4 @@ bool AShooterCharacter::IsDead() const
 float AShooterCharacter::GetHealthPercent() const
 {
 	return Health / MaxHealth;
-}
-
-void AShooterCharacter::MoveForward(float AxisValue)
-{
-	AddMovementInput(GetActorForwardVector() * AxisValue);
-}
-
-void AShooterCharacter::MoveRight(float AxisValue)
-{
-	AddMovementInput(GetActorRightVector() * AxisValue);
-}
-
-void AShooterCharacter::LookUpRate(float AxisValue)
-{
-	AddControllerPitchInput(AxisValue * RotationRate * GetWorld()->GetDeltaSeconds());
-}
-
-void AShooterCharacter::LookRightRate(float AxisValue)
-{
-	AddControllerYawInput(AxisValue * RotationRate * GetWorld()->GetDeltaSeconds());
-}
-
-void AShooterCharacter::ChangeWeaponIdx1()
-{
-	ChangeWeapon(0);
-}
-
-void AShooterCharacter::ChangeWeaponIdx2()
-{
-	ChangeWeapon(1);
-}
-
-void AShooterCharacter::ChangeWeaponIdx3()
-{
-	ChangeWeapon(2);
-}
-
-void AShooterCharacter::ChangeWeaponIdx4()
-{
-	ChangeWeapon(3);
-}
-
-void AShooterCharacter::ChangeWeapon(int32 Index)
-{
-	//null 체크 필요
-	if (!Weapon.IsValidIndex(Index)) 
-	{
-		UE_LOG(LogTemp, Warning, TEXT("KEY%d: NO Weapon"), Index); 
-		return;
-	}
-
-	//현재 착용중인 Weapon 비활성화
-	UE_LOG(LogTemp, Warning, TEXT("비활 Active Idx: %d"), ActiveWeaponIdx);
-	Weapon[ActiveWeaponIdx]->SetActorHiddenInGame(true);
-	Weapon[ActiveWeaponIdx]->SetOwner(nullptr);
-	
-	ActiveWeaponIdx = Index;
-
-	//인덱스 중인 Weapon만 활성화
-	UE_LOG(LogTemp, Warning, TEXT("활성화 Active Idx: %d"), ActiveWeaponIdx);
-	Weapon[ActiveWeaponIdx]->SetActorHiddenInGame(false);
-	Weapon[ActiveWeaponIdx]->SetOwner(this);
-}
-
-void AShooterCharacter::Shoot()
-{
-	//Gun->PullTrigger();
-	Weapon[ActiveWeaponIdx]->PullTrigger();
 }

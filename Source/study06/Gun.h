@@ -25,6 +25,7 @@ public:
 
 	/* Functions */
 	void PullTrigger();
+	void ReloadAmmo();
 
 private:
 	/* Variables */
@@ -52,8 +53,11 @@ private:
 	UPROPERTY(EditAnywhere)
 	float Damage = 10.f;
 
+	UPROPERTY(EditDefaultsOnly)
+	int32 MaxAmmo = 36;
+
 	UPROPERTY(VisibleAnywhere)
-	int32 Ammo = 10;
+	int32 Ammo;
 
 	/* Functions */
 	bool GunTrace(FHitResult& Hit, FVector& ShotDirection);

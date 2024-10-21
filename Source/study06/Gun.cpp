@@ -25,6 +25,8 @@ void AGun::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	//초기 Ammo 세팅
+	ReloadAmmo();
 }
 
 // Called every frame
@@ -36,9 +38,11 @@ void AGun::Tick(float DeltaTime)
 
 void AGun::PullTrigger()
 {
+	//Ammo 없으면 재장전
 	if (Ammo <= 0) 
 	{
 		UE_LOG(LogTemp, Warning, TEXT("No Ammo"));
+		ReloadAmmo();
 		return; 
 	}
 
@@ -86,6 +90,11 @@ bool AGun::GunTrace(FHitResult& Hit, FVector& ShotDirection)
 	Params.AddIgnoredActor(GetOwner());
 
 	return GetWorld()->LineTraceSingleByChannel(Hit, Location, End, ECollisionChannel::ECC_GameTraceChannel1, Params);
+}
+
+void AGun::ReloadAmmo()
+{
+	Ammo = MaxAmmo;
 }
 
 AController* AGun::GetOwnerController() const
